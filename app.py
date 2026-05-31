@@ -105,6 +105,52 @@ fund_df["P/E Ratio"] = fund_df["P/E Ratio"].apply(
 st.dataframe(fund_df, use_container_width=True)
 st.caption("Source: Yahoo Finance via yfinance. Data may be delayed.")
 
+
+# --- candlestick chart ---
+st.subheader("Price Chart (Candlestick)")
+
+candle_symbol = st.selectbox("Select ticker for candlestick chart", valid_symbols, key="candle_select")
+df_candle = stock_data[candle_symbol]
+
+candle_fig = go.Figure()
+
+candle_fig.add_trace(go.Candlestick(
+    x=df_candle.index,
+    open=df_candle["Open"],
+    high=df_candle["High"],
+    low=df_candle["Low"],
+    close=df_candle["Close"],
+    name="Price",
+    increasing_line_color="#26a69a",
+    decreasing_line_color="#ef5350",
+))
+
+candle_fig.add_trace(go.Bar(
+    x=df_candle.index,
+    y=df_candle["Volume"],
+    name="Volume",
+    marker_color="rgba(100,100,200,0.3)",
+    yaxis="y2"
+))
+
+candle_fig.update_layout(
+    height=500,
+    xaxis_title="Date",
+    yaxis_title="Price",
+    yaxis2=dict(
+        title="Volume",
+        overlaying="y",
+        side="right",
+        showgrid=False
+    ),
+    xaxis_rangeslider_visible=False,
+    hovermode="x unified",
+    title=f"{candle_symbol} — Candlestick Chart"
+)
+
+st.plotly_chart(candle_fig, use_container_width=True)
+
+
 #cumulative return chart
 st.subheader("Cumulative Return Over Time")
 
