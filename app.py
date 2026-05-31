@@ -149,3 +149,32 @@ for symbol in symbols:
 
 st.dataframe(pd.DataFrame(metrics), use_container_width=True)
 st.caption("Sharpe > 1.0 is good. Max Drawdown shows worst peak-to-trough loss in the period.")
+
+
+#correlation heatmap
+st.subheader("Correlation Heatmap")
+st.caption("How much each stock moves together. Lower correlation = better diversification.")
+
+all_returns = pd.DataFrame()
+for symbol in symbols:
+    df = fetch_stock_data(symbol, period)
+    all_returns[symbol] = df["Daily Return"]
+
+corr_matrix = all_returns.corr().round(2)
+
+heatmap_fig = go.Figure(data=go.Heatmap(
+    z=corr_matrix.values,
+    x=corr_matrix.columns.tolist(),
+    y=corr_matrix.index.tolist(),
+    colorscale="RdBu",
+    zmid=0, zmin=-1, zmax=1,
+    text=corr_matrix.values.round(2),
+    texttemplate="%{text}",
+    textfont={"size": 14},
+    hoverongaps=False
+))
+
+heatmap_fig.update_layout(height=350, xaxis_title="", yaxis_title="")
+st.plotly_chart(heatmap_fig, use_container_width=True)
+
+
