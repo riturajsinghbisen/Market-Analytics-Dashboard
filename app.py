@@ -271,6 +271,77 @@ scatter_fig.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.4)
 scatter_fig.add_vline(x=0, line_dash="dash", line_color="gray", opacity=0.4)
 st.plotly_chart(scatter_fig, use_container_width=True)
 
+
+#technical indicators
+st.subheader("Technical Indicators")
+
+tech_symbol = st.selectbox("Select ticker for technical analysis", valid_symbols, key="tech_select")
+df_tech = stock_data[tech_symbol].copy()
+
+#RSI
+def compute_rsi(series, window=14):
+    delta = series.diff()
+    gain = delta.clip(lower=0)
+    loss = -delta.clip(upper=0)
+    avg_gain = gain.ewm(com=window - 1, min_periods=window).mean()
+    avg_loss = loss.ewm(com=window - 1, min_periods=window).mean()
+    rs = avg_gain / avg_loss
+    return 100 - (100 / (1 + rs))
+
+#MACD
+def compute_macd(series, fast=12, slow=26, signal=9):
+    ema_fast = series.ewm(span=fast, adjust=False).mean()
+    ema_slow = series.ewm(span=slow, adjust=False).mean()
+    macd_line = ema_fast - ema_slow
+    signal_line = macd_line.ewm(span=signal, adjust=False).mean()
+    histogram = macd_line - signal_line
+    return macd_line, signal_line, histogram
+
+df_tech["RSI"] = compute_rsi(df_tech["Close"])
+df_tech["BB_Mid"] = df_tech["Close"].rolling(20).mean()
+df_tech["BB_Upper"] = df_tech["BB_Mid"] + 2 * df_tech["Close"].rolling(20).std()
+df_tech["BB_Lower"] = df_tech["BB_Mid"] - 2 * df_tech["Close"].rolling(20).std()
+df_tech["MACD"], df_tech["MACD_Signal"], df_tech["MACD_Hist"] = compute_macd(df_tech["Close"])
+
+tech_tab1, tech_tab2, tech_tab3 = st.tabs(["Bollinger Bands", "RSI", "MACD"])
+
+with tech_tab1:
+    bb_fig = go.Figure()
+    bb_fig.add_trace(go.Scatter(x=df_tech.index, y=df_tech["Close"], name="Close", line=dict(color="#636EFA")))
+    bb_fig.add_trace(go.Scatter(x=df_tech.index, y=df_tech["BB_Upper"], name="Upper Band", line=dict(color="#EF553B", dash="dot")))
+    bb_fig.add_trace(go.Scatter(x=df_tech.index, y=df_tech["BB_Lower"], name="Lower Band", line=dict(color="#00CC96", dash="dot"), fill="tonexty", fillcolor="rgba(0,204,150,0.05)"))
+    bb_fig.add_trace(go.Scatter(x=df_tech.index, y=df_tech["BB_Mid"], name="20-day MA", line=dict(color="gray", dash="dash")))
+    bb_fig.update_layout(height=400, hovermode="x unified", yaxis_title="Price", title=f"{tech_symbol} — Bollinger Bands")
+    st.plotly_chart(bb_fig, use_container_width=True)
+    st.caption("Price touching upper band = potentially overbought. Lower band = potentially oversold.")
+
+with tech_tab2:
+    rsi_fig = go.Figure()
+    rsi_fig.add_trace(go.Scatter(x=df_tech.index, y=df_tech["RSI"], name="RSI (14)", line=dict(color="#AB63FA")))
+    rsi_fig.add_hline(y=70, line_dash="dash", line_color="red", annotation_text="Overbought (70)")
+    rsi_fig.add_hline(y=30, line_dash="dash", line_color="green", annotation_text="Oversold (30)")
+    rsi_fig.update_layout(height=350, yaxis_title="RSI", yaxis_range=[0, 100], hovermode="x unified", title=f"{tech_symbol} — RSI (14-day)")
+    st.plotly_chart(rsi_fig, use_container_width=True)
+
+    last_rsi = df_tech["RSI"].iloc[-1]
+    if last_rsi > 70:
+        st.error(f"RSI = {last_rsi:.1f} — Overbought zone")
+    elif last_rsi < 30:
+        st.success(f"RSI = {last_rsi:.1f} — Oversold zone")
+    else:
+        st.info(f"RSI = {last_rsi:.1f} — Neutral zone")
+
+with tech_tab3:
+    macd_fig = go.Figure()
+    macd_fig.add_trace(go.Scatter(x=df_tech.index, y=df_tech["MACD"], name="MACD", line=dict(color="#636EFA")))
+    macd_fig.add_trace(go.Scatter(x=df_tech.index, y=df_tech["MACD_Signal"], name="Signal", line=dict(color="#EF553B")))
+    macd_fig.add_trace(go.Bar(x=df_tech.index, y=df_tech["MACD_Hist"], name="Histogram",
+        marker_color=["#26a69a" if v >= 0 else "#ef5350" for v in df_tech["MACD_Hist"]]))
+    macd_fig.update_layout(height=400, hovermode="x unified", yaxis_title="MACD", title=f"{tech_symbol} — MACD (12/26/9)")
+    st.plotly_chart(macd_fig, use_container_width=True)
+    st.caption("MACD crossing above signal line = bullish. Below = bearish.")
+
+
 #factor analysis
 st.subheader("Factor Analysis (OLS Regression)")
 st.caption("Regresses each stock's daily return against market proxy (SPY) to estimate beta and alpha.")
