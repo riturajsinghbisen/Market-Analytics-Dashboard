@@ -342,6 +342,87 @@ with tech_tab3:
     st.caption("MACD crossing above signal line = bullish. Below = bearish.")
 
 
+#portfolio analysis
+st.subheader("Portfolio Analysis")
+st.caption("Assign weights to each stock and analyse combined portfolio performance.")
+
+if len(valid_symbols) >= 2:
+    st.markdown("**Set portfolio weights (must sum to 100%)**")
+
+    weight_cols = st.columns(len(valid_symbols))
+    weights_input = {}
+    default_weight = round(100 / len(valid_symbols), 1)
+
+    for i, symbol in enumerate(valid_symbols):
+        with weight_cols[i]:
+            weights_input[symbol] = st.number_input(
+                f"{symbol} (%)", min_value=0.0, max_value=100.0,
+                value=default_weight, step=1.0, key=f"weight_{symbol}"
+            )
+
+    total_weight = sum(weights_input.values())
+    st.caption(f"Total weight: **{total_weight:.1f}%** {'✅' if abs(total_weight - 100) < 0.1 else '⚠️ must equal 100%'}")
+
+    if abs(total_weight - 100) < 0.1:
+        weights = {s: weights_input[s] / 100 for s in valid_symbols}
+
+        port_returns = pd.DataFrame({s: stock_data[s]["Daily Return"] for s in valid_symbols}).dropna()
+        port_weights = np.array([weights[s] for s in valid_symbols])
+
+        portfolio_daily_return = port_returns.values @ port_weights
+        portfolio_series = pd.Series(portfolio_daily_return, index=port_returns.index)
+
+        port_cumulative = (1 + portfolio_series).cumprod() - 1
+        port_volatility = portfolio_series.std() * np.sqrt(252) * 100
+        port_total_return = port_cumulative.iloc[-1] * 100
+        port_sharpe = sharpe_ratio(portfolio_series)
+        port_dd = max_drawdown(portfolio_series) * 100
+
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("Total Return", f"{port_total_return:.2f}%")
+        m2.metric("Annual Volatility", f"{port_volatility:.2f}%")
+        m3.metric("Sharpe Ratio", f"{port_sharpe:.2f}")
+        m4.metric("Max Drawdown", f"{port_dd:.2f}%")
+
+        port_fig = go.Figure()
+        port_fig.add_trace(go.Scatter(
+            x=port_cumulative.index,
+            y=(port_cumulative * 100).round(2),
+            name="Portfolio",
+            mode="lines",
+            line=dict(color="white", width=2.5, dash="dash")
+        ))
+
+        for symbol in valid_symbols:
+            df_s = stock_data[symbol]
+            port_fig.add_trace(go.Scatter(
+                x=df_s.index,
+                y=(df_s["Cumulative Return"] * 100).round(2),
+                name=f"{symbol} ({weights_input[symbol]:.0f}%)",
+                mode="lines",
+                line=dict(width=1.2)
+            ))
+
+        port_fig.update_layout(
+            height=420,
+            yaxis_title="Cumulative Return (%)",
+            xaxis_title="Date",
+            hovermode="x unified",
+            title="Portfolio vs Individual Stocks"
+        )
+        st.plotly_chart(port_fig, use_container_width=True)
+
+        pie_fig = go.Figure(go.Pie(
+            labels=valid_symbols,
+            values=[weights_input[s] for s in valid_symbols],
+            hole=0.4
+        ))
+        pie_fig.update_layout(height=300, title="Portfolio Allocation")
+        st.plotly_chart(pie_fig, use_container_width=True)
+else:
+    st.info("Add at least 2 tickers in the sidebar to use Portfolio Analysis.")
+
+
 #factor analysis
 st.subheader("Factor Analysis (OLS Regression)")
 st.caption("Regresses each stock's daily return against market proxy (SPY) to estimate beta and alpha.")
