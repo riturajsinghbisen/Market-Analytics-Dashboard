@@ -178,3 +178,27 @@ heatmap_fig.update_layout(height=350, xaxis_title="", yaxis_title="")
 st.plotly_chart(heatmap_fig, use_container_width=True)
 
 
+#risk vs return scatter
+st.subheader("Risk vs Return")
+
+scatter_fig = go.Figure()
+for row in summary:
+    scatter_fig.add_trace(go.Scatter(
+        x=[row["Volatility (std %)"]],
+        y=[row["Final Return (%)"]],
+        mode="markers+text",
+        name=row["Ticker"],
+        text=[row["Ticker"]],
+        textposition="top center",
+        marker=dict(size=14)
+    ))
+
+scatter_fig.update_layout(
+    xaxis_title="Volatility (Daily Std Dev %)",
+    yaxis_title="Total Return (%)",
+    height=400,
+    showlegend=False
+)
+scatter_fig.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.4)
+scatter_fig.add_vline(x=0, line_dash="dash", line_color="gray", opacity=0.4)
+st.plotly_chart(scatter_fig, use_container_width=True)
