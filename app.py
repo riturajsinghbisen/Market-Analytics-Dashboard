@@ -32,3 +32,53 @@ period = st.sidebar.selectbox(
 
 #parse tickers
 symbols = [s.strip().upper() for s in symbols_input.split(",") if s.strip()]
+
+#fundamentals
+st.subheader("Fundamentals")
+
+def get_fundamentals(symbol):
+    ticker = yf.Ticker(symbol)
+    info = ticker.info
+    return {
+        "Ticker": symbol,
+        "Market Cap": info.get("marketCap", "N/A"),
+        "P/E Ratio": info.get("trailingPE", "N/A"),
+        "Revenue Growth": info.get("revenueGrowth", "N/A"),
+        "Earnings Growth": info.get("earningsGrowth", "N/A"),
+        "Dividend Yield": info.get("dividendYield", "N/A"),
+        "52w High": info.get("fiftyTwoWeekHigh", "N/A"),
+        "52w Low": info.get("fiftyTwoWeekLow", "N/A"),
+        "Sector": info.get("sector", "N/A"),
+    }
+
+fund_data = []
+for symbol in symbols:
+    with st.spinner(f"Fetching fundamentals for {symbol}..."):
+        fund_data.append(get_fundamentals(symbol))
+
+fund_df = pd.DataFrame(fund_data)
+
+def format_market_cap(val):
+    if val == "N/A":
+        return val
+    if val >= 1e12:
+        return f"${val/1e12:.2f}T"
+    if val >= 1e9:
+        return f"${val/1e9:.2f}B"
+    return f"${val/1e6:.2f}M"
+
+def format_pct(val):
+    if val == "N/A" or val is None:
+        return "N/A"
+    return f"{round(val * 100, 2)}%"
+
+fund_df["Market Cap"] = fund_df["Market Cap"].apply(format_market_cap)
+fund_df["Revenue Growth"] = fund_df["Revenue Growth"].apply(format_pct)
+fund_df["Earnings Growth"] = fund_df["Earnings Growth"].apply(format_pct)
+fund_df["Dividend Yield"] = fund_df["Dividend Yield"].apply(format_pct)
+fund_df["P/E Ratio"] = fund_df["P/E Ratio"].apply(
+    lambda x: round(x, 2) if x != "N/A" and x is not None else "N/A"
+)
+
+st.dataframe(fund_df, use_container_width=True)
+st.caption("Source: Yahoo Finance via yfinance. Data may be delayed.")
