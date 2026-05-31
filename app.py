@@ -202,3 +202,29 @@ scatter_fig.update_layout(
 scatter_fig.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.4)
 scatter_fig.add_vline(x=0, line_dash="dash", line_color="gray", opacity=0.4)
 st.plotly_chart(scatter_fig, use_container_width=True)
+
+#factor analysis
+st.subheader("Factor Analysis (OLS Regression)")
+st.caption("Regresses each stock's daily return against market proxy (SPY) to estimate beta and alpha.")
+
+spy_df = fetch_stock_data("SPY", period)
+spy_returns = spy_df["Daily Return"].dropna()
+reg_results = []
+
+for symbol in symbols:
+    df = fetch_stock_data(symbol, period)
+    stock_returns = df["Daily Return"].dropna()
+    combined = pd.concat([stock_returns, spy_returns], axis=1).dropna()
+    combined.columns = ["Stock", "Market"]
+    X = sm.add_constant(combined["Market"])
+    model = sm.OLS(combined["Stock"], X).fit()
+    reg_results.append({
+        "Ticker": symbol,
+        "Alpha (daily %)": round(model.params["const"] * 100, 4),
+        "Beta": round(model.params["Market"], 4),
+        "R²": round(model.rsquared, 4),
+        "p-value (beta)": round(model.pvalues["Market"], 4),
+    })
+
+st.dataframe(pd.DataFrame(reg_results), use_container_width=True)
+st.caption("Beta > 1 = more volatile than market. Alpha > 0 = outperforming market after adjusting for risk.")
