@@ -119,3 +119,33 @@ for symbol in symbols:
 
 st.dataframe(pd.DataFrame(summary), use_container_width=True)
 
+#risk metrics
+st.subheader("Risk Metrics")
+
+def max_drawdown(returns):
+    cumulative = (1 + returns).cumprod()
+    peak = cumulative.cummax()
+    drawdown = (cumulative - peak) / peak
+    return drawdown.min()
+
+def sharpe_ratio(returns):
+    mean = returns.mean()
+    std = returns.std()
+    if std == 0:
+        return 0
+    return round((mean / std) * (252 ** 0.5), 4)
+
+metrics = []
+for symbol in symbols:
+    df = fetch_stock_data(symbol, period)
+    returns = df["Daily Return"].dropna()
+    metrics.append({
+        "Ticker": symbol,
+        "Sharpe Ratio": sharpe_ratio(returns),
+        "Max Drawdown (%)": round(max_drawdown(returns) * 100, 2),
+        "Best Day (%)": round(returns.max() * 100, 2),
+        "Worst Day (%)": round(returns.min() * 100, 2),
+    })
+
+st.dataframe(pd.DataFrame(metrics), use_container_width=True)
+st.caption("Sharpe > 1.0 is good. Max Drawdown shows worst peak-to-trough loss in the period.")
