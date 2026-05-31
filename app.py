@@ -36,6 +36,25 @@ period = st.sidebar.selectbox(
 #parse tickers
 symbols = [s.strip().upper() for s in symbols_input.split(",") if s.strip()]
 
+
+#fetch all data once and reuse
+stock_data = {}
+invalid_symbols = []
+
+for symbol in symbols:
+    df = fetch_stock_data(symbol, period)
+    if df is None or df.empty:
+        invalid_symbols.append(symbol)
+        st.sidebar.error(f"⚠️ {symbol} not found or no data returned.")
+    else:
+        stock_data[symbol] = df
+
+valid_symbols = [s for s in symbols if s in stock_data]
+
+if not valid_symbols:
+    st.error("No valid tickers found. Please check your input.")
+    st.stop()
+
 #fundamentals
 st.subheader("Fundamentals")
 
@@ -55,7 +74,7 @@ def get_fundamentals(symbol):
     }
 
 fund_data = []
-for symbol in symbols:
+for symbol in valid_symbols:
     with st.spinner(f"Fetching fundamentals for {symbol}..."):
         fund_data.append(get_fundamentals(symbol))
 
@@ -90,7 +109,7 @@ st.caption("Source: Yahoo Finance via yfinance. Data may be delayed.")
 st.subheader("Cumulative Return Over Time")
 
 fig = go.Figure()
-for symbol in symbols:
+for symbol in valid_symbols:
     with st.spinner(f"Fetching {symbol}..."):
         df = fetch_stock_data(symbol, period)
         fig.add_trace(go.Scatter(
@@ -111,7 +130,7 @@ st.plotly_chart(fig, use_container_width=True)
 #summary table
 st.subheader("Summary")
 summary = []
-for symbol in symbols:
+for symbol in valid_symbols:
     df = fetch_stock_data(symbol, period)
     summary.append({
         "Ticker": symbol,
@@ -139,7 +158,7 @@ def sharpe_ratio(returns):
     return round((mean / std) * (252 ** 0.5), 4)
 
 metrics = []
-for symbol in symbols:
+for symbol in valid_symbols:
     df = fetch_stock_data(symbol, period)
     returns = df["Daily Return"].dropna()
     metrics.append({
@@ -159,7 +178,7 @@ st.subheader("Correlation Heatmap")
 st.caption("How much each stock moves together. Lower correlation = better diversification.")
 
 all_returns = pd.DataFrame()
-for symbol in symbols:
+for symbol in valid_symbols:
     df = fetch_stock_data(symbol, period)
     all_returns[symbol] = df["Daily Return"]
 
@@ -214,7 +233,7 @@ spy_df = fetch_stock_data("SPY", period)
 spy_returns = spy_df["Daily Return"].dropna()
 reg_results = []
 
-for symbol in symbols:
+for symbol in valid_symbols:
     df = fetch_stock_data(symbol, period)
     stock_returns = df["Daily Return"].dropna()
     combined = pd.concat([stock_returns, spy_returns], axis=1).dropna()
