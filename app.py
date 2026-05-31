@@ -228,3 +228,52 @@ for symbol in symbols:
 
 st.dataframe(pd.DataFrame(reg_results), use_container_width=True)
 st.caption("Beta > 1 = more volatile than market. Alpha > 0 = outperforming market after adjusting for risk.")
+
+
+#momentum
+st.subheader("Momentum Analysis (Moving Averages)")
+st.caption("20-day MA crossing above 50-day MA signals positive momentum.")
+
+momentum_symbol = symbols[0]
+df_mom = fetch_stock_data(momentum_symbol, period)
+df_mom["MA20"] = df_mom["Close"].rolling(window=20).mean()
+df_mom["MA50"] = df_mom["Close"].rolling(window=50).mean()
+
+mom_fig = go.Figure()
+mom_fig.add_trace(go.Scatter(
+    x=df_mom.index,
+    y=df_mom["Close"].round(2),
+    name="Close Price",
+    mode="lines",
+    line=dict(color="#636EFA", width=1.5)
+))
+mom_fig.add_trace(go.Scatter(
+    x=df_mom.index,
+    y=df_mom["MA20"].round(2),
+    name="20-day MA",
+    mode="lines",
+    line=dict(color="#EF553B", width=1.5, dash="dot")
+))
+mom_fig.add_trace(go.Scatter(
+    x=df_mom.index,
+    y=df_mom["MA50"].round(2),
+    name="50-day MA",
+    mode="lines",
+    line=dict(color="#00CC96", width=1.5, dash="dash")
+))
+
+mom_fig.update_layout(
+    yaxis_title="Price (USD)",
+    xaxis_title="Date",
+    hovermode="x unified",
+    height=420,
+    title=f"{momentum_symbol} — Price and Momentum Indicators"
+)
+st.plotly_chart(mom_fig, use_container_width=True)
+
+last_ma20 = df_mom["MA20"].iloc[-1]
+last_ma50 = df_mom["MA50"].iloc[-1]
+if last_ma20 > last_ma50:
+    st.success(f"{momentum_symbol}: Bullish — 20-day MA ({last_ma20:.2f}) above 50-day MA ({last_ma50:.2f})")
+else:
+    st.warning(f"{momentum_symbol}: Bearish — 20-day MA ({last_ma20:.2f}) below 50-day MA ({last_ma50:.2f})")
