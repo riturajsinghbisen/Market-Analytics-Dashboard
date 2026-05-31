@@ -105,3 +105,17 @@ fig.update_layout(
 )
 st.plotly_chart(fig, use_container_width=True)
 
+#summary table
+st.subheader("Summary")
+summary = []
+for symbol in symbols:
+    df = fetch_stock_data(symbol, period)
+    summary.append({
+        "Ticker": symbol,
+        "Final Return (%)": round(df["Cumulative Return"].iloc[-1] * 100, 2),
+        "Avg Daily Return (%)": round(df["Daily Return"].mean() * 100, 4),
+        "Volatility (std %)": round(df["Daily Return"].std() * 100, 4),
+    })
+
+st.dataframe(pd.DataFrame(summary), use_container_width=True)
+
