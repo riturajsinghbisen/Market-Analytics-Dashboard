@@ -82,3 +82,26 @@ fund_df["P/E Ratio"] = fund_df["P/E Ratio"].apply(
 
 st.dataframe(fund_df, use_container_width=True)
 st.caption("Source: Yahoo Finance via yfinance. Data may be delayed.")
+
+#cumulative return chart
+st.subheader("Cumulative Return Over Time")
+
+fig = go.Figure()
+for symbol in symbols:
+    with st.spinner(f"Fetching {symbol}..."):
+        df = fetch_stock_data(symbol, period)
+        fig.add_trace(go.Scatter(
+            x=df.index,
+            y=(df["Cumulative Return"] * 100).round(2),
+            name=symbol,
+            mode="lines"
+        ))
+
+fig.update_layout(
+    yaxis_title="Cumulative Return (%)",
+    xaxis_title="Date",
+    hovermode="x unified",
+    height=450
+)
+st.plotly_chart(fig, use_container_width=True)
+
