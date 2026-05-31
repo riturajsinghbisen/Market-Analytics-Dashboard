@@ -6,9 +6,12 @@ import statsmodels.api as sm
 import numpy as np
 
 #data fetching
+@st.cache_data(ttl=3600)
 def fetch_stock_data(ticker_symbol, period="1y"):
     ticker = yf.Ticker(ticker_symbol)
     df = ticker.history(period=period)
+    if df.empty:
+        return None
     df["Daily Return"] = df["Close"].pct_change()
     df["Cumulative Return"] = (1 + df["Daily Return"]).cumprod() - 1
     return df
