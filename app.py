@@ -84,6 +84,7 @@ if not valid_symbols:
 #fundamentals
 st.subheader("Fundamentals")
 
+@st.cache_data(ttl=3600)
 def get_fundamentals(symbol):
     ticker = yf.Ticker(symbol)
     info = ticker.info
@@ -99,11 +100,16 @@ def get_fundamentals(symbol):
         "Sector": info.get("sector", "N/A"),
     }
 
+
 fund_data = []
 for symbol in valid_symbols:
     with st.spinner(f"Fetching fundamentals for {symbol}..."):
-        fund_data.append(get_fundamentals(symbol))
+        try:
+            fund_data.append(get_fundamentals(symbol))
+        except Exception:
+            st.warning(f"⚠️ Could not fetch fundamentals for {symbol} — Yahoo Finance rate limit. Try again in a moment.") 
 
+            
 fund_df = pd.DataFrame(fund_data)
 
 def format_market_cap(val):
