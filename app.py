@@ -88,16 +88,37 @@ st.subheader("Fundamentals")
 def get_fundamentals(symbol):
     ticker = yf.Ticker(symbol)
     info = ticker.info
+
+    # compute Free Cash Flow
+    try:
+        cf = ticker.cashflow
+        fcf = None
+        if cf is not None and not cf.empty:
+            op_cf_key = [k for k in cf.index if "Operating" in k and "Cash" in k]
+            capex_key  = [k for k in cf.index if "Capital" in k]
+            if op_cf_key and capex_key:
+                op_cf = cf.loc[op_cf_key[0]].iloc[0]
+                capex = cf.loc[capex_key[0]].iloc[0]
+                fcf   = op_cf + capex
+    except Exception:
+        fcf = None
+
     return {
-        "Ticker": symbol,
-        "Market Cap": info.get("marketCap", "N/A"),
-        "P/E Ratio": info.get("trailingPE", "N/A"),
-        "Revenue Growth": info.get("revenueGrowth", "N/A"),
+        "Ticker":          symbol,
+        "Sector":          info.get("sector", "N/A"),
+        "Market Cap":      info.get("marketCap", "N/A"),
+        "P/E Ratio":       info.get("trailingPE", "N/A"),
+        "PEG Ratio":       info.get("pegRatio", "N/A"),
+        "EPS (TTM)":       info.get("trailingEps", "N/A"),
+        "ROE":             info.get("returnOnEquity", "N/A"),
+        "ROA":             info.get("returnOnAssets", "N/A"),
+        "Debt/Equity":     info.get("debtToEquity", "N/A"),
+        "Free Cash Flow":  fcf,
+        "Revenue Growth":  info.get("revenueGrowth", "N/A"),
         "Earnings Growth": info.get("earningsGrowth", "N/A"),
-        "Dividend Yield": info.get("dividendYield", "N/A"),
-        "52w High": info.get("fiftyTwoWeekHigh", "N/A"),
-        "52w Low": info.get("fiftyTwoWeekLow", "N/A"),
-        "Sector": info.get("sector", "N/A"),
+        "Dividend Yield":  info.get("dividendYield", "N/A"),
+        "52w High":        info.get("fiftyTwoWeekHigh", "N/A"),
+        "52w Low":         info.get("fiftyTwoWeekLow", "N/A"),
     }
 
 
@@ -126,13 +147,22 @@ def format_pct(val):
         return "N/A"
     return f"{round(val * 100, 2)}%"
 
-fund_df["Market Cap"] = fund_df["Market Cap"].apply(format_market_cap)
-fund_df["Revenue Growth"] = fund_df["Revenue Growth"].apply(format_pct)
+def fmt_ratio(val):
+    if val in ("N/A", None): return "N/A"
+    try: return round(float(val), 2)
+    except: return "N/A"
+
+fund_df["Market Cap"]      = fund_df["Market Cap"].apply(format_market_cap)
+fund_df["Free Cash Flow"]  = fund_df["Free Cash Flow"].apply(format_market_cap)
+fund_df["Revenue Growth"]  = fund_df["Revenue Growth"].apply(format_pct)
 fund_df["Earnings Growth"] = fund_df["Earnings Growth"].apply(format_pct)
-fund_df["Dividend Yield"] = fund_df["Dividend Yield"].apply(format_pct)
-fund_df["P/E Ratio"] = fund_df["P/E Ratio"].apply(
-    lambda x: round(x, 2) if x != "N/A" and x is not None else "N/A"
-)
+fund_df["Dividend Yield"]  = fund_df["Dividend Yield"].apply(format_pct)
+fund_df["ROE"]             = fund_df["ROE"].apply(format_pct)
+fund_df["ROA"]             = fund_df["ROA"].apply(format_pct)
+fund_df["P/E Ratio"]       = fund_df["P/E Ratio"].apply(fmt_ratio)
+fund_df["PEG Ratio"]       = fund_df["PEG Ratio"].apply(fmt_ratio)
+fund_df["EPS (TTM)"]       = fund_df["EPS (TTM)"].apply(fmt_ratio)
+fund_df["Debt/Equity"]     = fund_df["Debt/Equity"].apply(fmt_ratio)
 
 st.dataframe(fund_df, use_container_width=True)
 st.caption("Source: Yahoo Finance via yfinance. Data may be delayed.")
