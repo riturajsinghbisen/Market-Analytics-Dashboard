@@ -457,7 +457,6 @@ else:
 
 #factor analysis
 st.subheader("Factor Analysis (OLS Regression)")
-st.caption(f"Regresses each stock's daily return against market proxy ({market_proxy}) to estimate beta and alpha.")
 
 # use Indian market proxy if all stocks are Indian
 if all(".NS" in s or ".BO" in s for s in valid_symbols):
@@ -495,7 +494,11 @@ for symbol in valid_symbols:
         st.warning(f"Regression failed for {symbol}: {e}")
 
 st.dataframe(pd.DataFrame(reg_results), use_container_width=True)
-st.caption("Beta > 1 = more volatile than market. Alpha > 0 = outperforming market after adjusting for risk.")
+if all(".NS" in s or ".BO" in s for s in valid_symbols):
+    proxy_name = "^NSEI (Nifty 50)"
+else:
+    proxy_name = "SPY"
+st.caption(f"Regresses each stock's daily return against market proxy ({proxy_name}). Beta > 1 = more volatile than market. Alpha > 0 = outperforming market.")
 
 
 #momentum
