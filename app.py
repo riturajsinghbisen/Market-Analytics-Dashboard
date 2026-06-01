@@ -457,10 +457,21 @@ else:
 
 #factor analysis
 st.subheader("Factor Analysis (OLS Regression)")
-st.caption("Regresses each stock's daily return against market proxy (SPY) to estimate beta and alpha.")
+st.caption(f"Regresses each stock's daily return against market proxy ({market_proxy}) to estimate beta and alpha.")
 
-spy_df = fetch_stock_data("SPY", period)
+# use Indian market proxy if all stocks are Indian
+if all(".NS" in s or ".BO" in s for s in valid_symbols):
+    market_proxy = "^NSEI"  # Nifty 50 index
+else:
+    market_proxy = "SPY"
+
+spy_df = fetch_stock_data(market_proxy, period)
+if spy_df is None or spy_df.empty:
+    spy_df = fetch_stock_data("SPY", period)
+    market_proxy = "SPY"
+
 spy_returns = spy_df["Daily Return"].dropna()
+
 reg_results = []
 
 for symbol in valid_symbols:
