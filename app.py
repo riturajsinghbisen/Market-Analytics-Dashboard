@@ -23,15 +23,41 @@ st.caption("Analyse and compare global stock returns")
 
 #sidebar
 st.sidebar.header("Settings")
+
+# --- quick presets ---
+st.sidebar.markdown("**Quick Presets**")
+preset_cols = st.sidebar.columns(2)
+if preset_cols[0].button("🇺🇸 US Tech", use_container_width=True):
+    st.session_state["symbols_input"] = "AAPL, MSFT, GOOGL, NVDA"
+if preset_cols[1].button("🇮🇳 Nifty 50", use_container_width=True):
+    st.session_state["symbols_input"] = "RELIANCE.NS, TCS.NS, INFY.NS, HDFCBANK.NS"
+
+st.sidebar.markdown("---")
+
 symbols_input = st.sidebar.text_input(
     "Enter stock tickers (comma separated)",
-    value="AAPL, MSFT, GOOGL"
+    value=st.session_state.get("symbols_input", "AAPL, MSFT, GOOGL"),
+    key="symbols_input"
 )
+
 period = st.sidebar.selectbox(
     "Time period",
     options=["6mo", "1y", "2y", "5y"],
     index=1
 )
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("""
+**Indian Stock Examples (.NS suffix)**
+- `RELIANCE.NS` — Reliance Industries
+- `TCS.NS` — Tata Consultancy
+- `INFY.NS` — Infosys
+- `HDFCBANK.NS` — HDFC Bank
+- `ICICIBANK.NS` — ICICI Bank
+- `WIPRO.NS` — Wipro
+- `BAJFINANCE.NS` — Bajaj Finance
+- `MARUTI.NS` — Maruti Suzuki
+""")
 
 #parse tickers
 symbols = [s.strip().upper() for s in symbols_input.split(",") if s.strip()]
