@@ -165,6 +165,12 @@ fund_df["EPS (TTM)"]       = fund_df["EPS (TTM)"].apply(fmt_ratio)
 fund_df["Debt/Equity"]     = fund_df["Debt/Equity"].apply(fmt_ratio)
 
 st.dataframe(fund_df, use_container_width=True)
+st.download_button(
+    "⬇️ Download Fundamentals CSV",
+    data=fund_df.to_csv(index=False),
+    file_name="fundamentals.csv",
+    mime="text/csv"
+)
 st.caption("Source: Yahoo Finance via yfinance. Data may be delayed.")
 
 
@@ -247,7 +253,15 @@ for symbol in valid_symbols:
         "Volatility (std %)": round(df["Daily Return"].std() * 100, 4),
     })
 
-st.dataframe(pd.DataFrame(summary), use_container_width=True)
+summary_df = pd.DataFrame(summary)
+st.dataframe(summary_df, use_container_width=True)
+st.download_button(
+    "⬇️ Download Summary CSV",
+    data=summary_df.to_csv(index=False),
+    file_name="summary.csv",
+    mime="text/csv"
+)
+
 
 #risk metrics
 st.subheader("Risk Metrics")
@@ -277,7 +291,14 @@ for symbol in valid_symbols:
         "Worst Day (%)": round(returns.min() * 100, 2),
     })
 
-st.dataframe(pd.DataFrame(metrics), use_container_width=True)
+metrics_df = pd.DataFrame(metrics)
+st.dataframe(metrics_df, use_container_width=True)
+st.download_button(
+    "⬇️ Download Risk Metrics CSV",
+    data=metrics_df.to_csv(index=False),
+    file_name="risk_metrics.csv",
+    mime="text/csv"
+)
 st.caption("Sharpe > 1.0 is good. Max Drawdown shows worst peak-to-trough loss in the period.")
 
 
@@ -523,7 +544,15 @@ for symbol in valid_symbols:
     except Exception as e:
         st.warning(f"Regression failed for {symbol}: {e}")
 
-st.dataframe(pd.DataFrame(reg_results), use_container_width=True)
+reg_df = pd.DataFrame(reg_results)
+st.dataframe(reg_df, use_container_width=True)
+st.download_button(
+    "⬇️ Download Regression Results CSV",
+    data=reg_df.to_csv(index=False),
+    file_name="regression_results.csv",
+    mime="text/csv"
+)
+
 if all(".NS" in s or ".BO" in s for s in valid_symbols):
     proxy_name = "^NSEI (Nifty 50)"
 else:
@@ -578,3 +607,5 @@ if last_ma20 > last_ma50:
     st.success(f"{momentum_symbol}: Bullish — 20-day MA ({last_ma20:.2f}) above 50-day MA ({last_ma50:.2f})")
 else:
     st.warning(f"{momentum_symbol}: Bearish — 20-day MA ({last_ma20:.2f}) below 50-day MA ({last_ma50:.2f})")
+
+"the end"
