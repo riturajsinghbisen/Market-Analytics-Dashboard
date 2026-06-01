@@ -607,5 +607,3 @@ if last_ma20 > last_ma50:
     st.success(f"{momentum_symbol}: Bullish — 20-day MA ({last_ma20:.2f}) above 50-day MA ({last_ma50:.2f})")
 else:
     st.warning(f"{momentum_symbol}: Bearish — 20-day MA ({last_ma20:.2f}) below 50-day MA ({last_ma50:.2f})")
-
-"the end"
