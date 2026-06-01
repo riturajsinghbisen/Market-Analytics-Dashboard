@@ -109,7 +109,7 @@ for symbol in valid_symbols:
         except Exception:
             st.warning(f"⚠️ Could not fetch fundamentals for {symbol} — Yahoo Finance rate limit. Try again in a moment.") 
 
-            
+
 fund_df = pd.DataFrame(fund_data)
 
 def format_market_cap(val):
@@ -464,19 +464,24 @@ spy_returns = spy_df["Daily Return"].dropna()
 reg_results = []
 
 for symbol in valid_symbols:
-    df = fetch_stock_data(symbol, period)
-    stock_returns = df["Daily Return"].dropna()
-    combined = pd.concat([stock_returns, spy_returns], axis=1).dropna()
-    combined.columns = ["Stock", "Market"]
-    X = sm.add_constant(combined["Market"])
-    model = sm.OLS(combined["Stock"], X).fit()
-    reg_results.append({
-        "Ticker": symbol,
-        "Alpha (daily %)": round(model.params["const"] * 100, 4),
-        "Beta": round(model.params["Market"], 4),
-        "R²": round(model.rsquared, 4),
-        "p-value (beta)": round(model.pvalues["Market"], 4),
-    })
+    try:
+        stock_returns = stock_data[symbol]["Daily Return"].dropna()
+        combined = pd.concat([stock_returns, spy_returns], axis=1).dropna()
+        combined.columns = ["Stock", "Market"]
+        if len(combined) < 10:
+            st.warning(f"Not enough data for regression on {symbol}")
+            continue
+        X = sm.add_constant(combined["Market"])
+        model = sm.OLS(combined["Stock"], X).fit()
+        reg_results.append({
+            "Ticker": symbol,
+            "Alpha (daily %)": round(model.params["const"] * 100, 4),
+            "Beta": round(model.params["Market"], 4),
+            "R²": round(model.rsquared, 4),
+            "p-value (beta)": round(model.pvalues["Market"], 4),
+        })
+    except Exception as e:
+        st.warning(f"Regression failed for {symbol}: {e}")
 
 st.dataframe(pd.DataFrame(reg_results), use_container_width=True)
 st.caption("Beta > 1 = more volatile than market. Alpha > 0 = outperforming market after adjusting for risk.")
