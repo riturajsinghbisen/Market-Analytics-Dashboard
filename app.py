@@ -535,7 +535,7 @@ st.caption(f"Regresses each stock's daily return against market proxy ({proxy_na
 st.subheader("Momentum Analysis (Moving Averages)")
 st.caption("20-day MA crossing above 50-day MA signals positive momentum.")
 
-momentum_symbol = symbols[0]
+momentum_symbol = st.selectbox("Select ticker for momentum analysis", valid_symbols, key="momentum_select")
 df_mom = fetch_stock_data(momentum_symbol, period)
 df_mom["MA20"] = df_mom["Close"].rolling(window=20).mean()
 df_mom["MA50"] = df_mom["Close"].rolling(window=50).mean()
