@@ -1,5 +1,6 @@
 import yfinance as yf
 import pandas as pd
+import time
 import streamlit as st
 import plotly.graph_objects as go
 import statsmodels.api as sm
@@ -127,6 +128,7 @@ for symbol in valid_symbols:
     with st.spinner(f"Fetching fundamentals for {symbol}..."):
         try:
             fund_data.append(get_fundamentals(symbol))
+            time.sleep(0.5)
         except Exception:
             st.warning(f"⚠️ Could not fetch fundamentals for {symbol} — Yahoo Finance rate limit. Try again in a moment.") 
 
@@ -172,7 +174,7 @@ if not fund_df.empty:
     fund_df["PEG Ratio"]       = fund_df["PEG Ratio"].apply(fmt_ratio)
     fund_df["EPS (TTM)"]       = fund_df["EPS (TTM)"].apply(fmt_ratio)
     fund_df["Debt/Equity"]     = fund_df["Debt/Equity"].apply(fmt_ratio)
-    
+
 st.dataframe(fund_df, use_container_width=True)
 st.download_button(
     "⬇️ Download Fundamentals CSV",
@@ -443,13 +445,14 @@ if len(valid_symbols) >= 2:
 
     weight_cols = st.columns(len(valid_symbols))
     weights_input = {}
-    default_weight = round(100 / len(valid_symbols), 1)
+    default_weight = round(100 / len(valid_symbols), 2)
 
     for i, symbol in enumerate(valid_symbols):
         with weight_cols[i]:
+            dw = default_weight if i < len(valid_symbols) - 1 else round(100 - default_weight * (len(valid_symbols) - 1), 2)
             weights_input[symbol] = st.number_input(
                 f"{symbol} (%)", min_value=0.0, max_value=100.0,
-                value=default_weight, step=1.0, key=f"weight_{symbol}"
+                value=dw, step=1.0, key=f"weight_{symbol}"
             )
 
     total_weight = sum(weights_input.values())
