@@ -131,11 +131,19 @@ for symbol in valid_symbols:
             st.warning(f"⚠️ Could not fetch fundamentals for {symbol} — Yahoo Finance rate limit. Try again in a moment.") 
 
 
-fund_df = pd.DataFrame(fund_data)
+fund_df = pd.DataFrame(fund_data) if fund_data else pd.DataFrame(
+    columns=["Ticker","Sector","Market Cap","P/E Ratio","PEG Ratio",
+             "EPS (TTM)","ROE","ROA","Debt/Equity","Free Cash Flow",
+             "Revenue Growth","Earnings Growth","Dividend Yield","52w High","52w Low"]
+)
 
 def format_market_cap(val):
-    if val == "N/A":
-        return val
+    if val is None or val == "N/A":
+        return "N/A"
+    try:
+        val = float(val)
+    except (TypeError, ValueError):
+        return "N/A"
     if val >= 1e12:
         return f"${val/1e12:.2f}T"
     if val >= 1e9:
@@ -152,18 +160,19 @@ def fmt_ratio(val):
     try: return round(float(val), 2)
     except: return "N/A"
 
-fund_df["Market Cap"]      = fund_df["Market Cap"].apply(format_market_cap)
-fund_df["Free Cash Flow"]  = fund_df["Free Cash Flow"].apply(format_market_cap)
-fund_df["Revenue Growth"]  = fund_df["Revenue Growth"].apply(format_pct)
-fund_df["Earnings Growth"] = fund_df["Earnings Growth"].apply(format_pct)
-fund_df["Dividend Yield"]  = fund_df["Dividend Yield"].apply(format_pct)
-fund_df["ROE"]             = fund_df["ROE"].apply(format_pct)
-fund_df["ROA"]             = fund_df["ROA"].apply(format_pct)
-fund_df["P/E Ratio"]       = fund_df["P/E Ratio"].apply(fmt_ratio)
-fund_df["PEG Ratio"]       = fund_df["PEG Ratio"].apply(fmt_ratio)
-fund_df["EPS (TTM)"]       = fund_df["EPS (TTM)"].apply(fmt_ratio)
-fund_df["Debt/Equity"]     = fund_df["Debt/Equity"].apply(fmt_ratio)
-
+if not fund_df.empty:
+    fund_df["Market Cap"]      = fund_df["Market Cap"].apply(format_market_cap)
+    fund_df["Free Cash Flow"]  = fund_df["Free Cash Flow"].apply(format_market_cap)
+    fund_df["Revenue Growth"]  = fund_df["Revenue Growth"].apply(format_pct)
+    fund_df["Earnings Growth"] = fund_df["Earnings Growth"].apply(format_pct)
+    fund_df["Dividend Yield"]  = fund_df["Dividend Yield"].apply(format_pct)
+    fund_df["ROE"]             = fund_df["ROE"].apply(format_pct)
+    fund_df["ROA"]             = fund_df["ROA"].apply(format_pct)
+    fund_df["P/E Ratio"]       = fund_df["P/E Ratio"].apply(fmt_ratio)
+    fund_df["PEG Ratio"]       = fund_df["PEG Ratio"].apply(fmt_ratio)
+    fund_df["EPS (TTM)"]       = fund_df["EPS (TTM)"].apply(fmt_ratio)
+    fund_df["Debt/Equity"]     = fund_df["Debt/Equity"].apply(fmt_ratio)
+    
 st.dataframe(fund_df, use_container_width=True)
 st.download_button(
     "⬇️ Download Fundamentals CSV",
